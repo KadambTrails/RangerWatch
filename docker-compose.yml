@@ -1,0 +1,66 @@
+services:
+
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: rw-postgres
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  airflow:
+    image: apache/airflow:2.10.0
+    container_name: rw-airflow
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      AIRFLOW_UID: ${AIRFLOW_UID}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+
+    ports:
+      - "8080:8080"
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+
+    command: standalone
+
+    depends_on:
+      - postgres
+
+  spark-master:
+    image: apache/spark:4.2.0
+    container_name: rw-spark-master
+    restart: unless-stopped
+    command: /opt/spark/sbin/start-master.sh
+    ports:
+      - "7077:7077"
+      - "8081:8080"
+
+  spark-worker:
+    image: apache/spark:4.2.0
+    container_name: rw-spark-worker
+    restart: unless-stopped
+    command: /opt/spark/sbin/start-worker.sh spark://rw-spark-master:7077
+    depends_on:
+      - spark-master
+
+volumes:
+  postgres_data:
