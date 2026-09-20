@@ -29,12 +29,15 @@ for location in individual["locations"]:
     source_record_id = (f"{animal_id}_{location["timestamp"]}")
 
     cur.execute(
-        """ Insert into raw_events(
+    """
+    INSERT INTO raw_events (
         source,
         source_record_id,
         payload
-        )
-    Values (%s,%s,%s)
+    )
+    VALUES (%s, %s, %s)
+    ON CONFLICT (source, source_record_id)
+    DO NOTHING
     """,
     (
         "movebank",

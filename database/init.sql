@@ -97,5 +97,9 @@ ON protected_areas
 USING GIST (geom);
 
 -- =====================================================
--- SETTLEMENTS
--- ===
+-- Unique Constraints
+-- =====================================================
+
+ALTER TABLE raw_events
+ADD CONSTRAINT uq_raw_events
+UNIQUE (source, source_record_id);
