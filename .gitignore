@@ -1,9 +1,17 @@
+# Environment
 .env
 
-airflow/logs/
-
+# Python
+.venv/
 __pycache__/
-
 *.pyc
 
-.venv
+# Airflow
+airflow/logs/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
