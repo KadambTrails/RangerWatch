@@ -51,18 +51,26 @@ services:
     image: apache/spark:4.2.0
     container_name: rw-spark-master
     restart: unless-stopped
-    command: /opt/spark/sbin/start-master.sh
+    env_file:
+      - .env
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
     ports:
       - "7077:7077"
       - "8081:8080"
+    volumes:
+      - ./spark_jobs:/opt/spark_jobs
 
   spark-worker:
     image: apache/spark:4.2.0
     container_name: rw-spark-worker
     restart: unless-stopped
-    command: /opt/spark/sbin/start-worker.sh spark://rw-spark-master:7077
+    env_file:
+      - .env
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
     depends_on:
       - spark-master
+    volumes:
+      - ./spark_jobs:/opt/spark_jobs
 
 volumes:
   postgres_data:
