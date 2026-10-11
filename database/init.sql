@@ -118,3 +118,17 @@ CREATE TABLE movement_metrics
 
     distance_km DOUBLE PRECISION
 );
+
+
+CREATE TABLE public.weather_observations (
+	id bigserial NOT NULL,
+	observation_time timestamp NOT NULL,
+	latitude float8 NOT NULL,
+	longitude float8 NOT NULL,
+	temperature_c float8 NULL,
+	wind_speed_kmh float8 NULL,
+	precipitation_mm float8 NULL,
+	created_at timestamp DEFAULT now() NULL,
+	CONSTRAINT uq_weather_obs UNIQUE (observation_time, latitude, longitude),
+	CONSTRAINT weather_observations_pkey PRIMARY KEY (id)
+);
