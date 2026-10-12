@@ -64,19 +64,18 @@ USING GIST(geom);
 -- WEATHER ENRICHMENT
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS weather_observations (
-    id BIGSERIAL PRIMARY KEY,
 
-    observation_time TIMESTAMP NOT NULL,
-
-    latitude DOUBLE PRECISION NOT NULL,
-    longitude DOUBLE PRECISION NOT NULL,
-
-    temperature_c DOUBLE PRECISION,
-    wind_speed_kmh DOUBLE PRECISION,
-    precipitation_mm DOUBLE PRECISION,
-
-    created_at TIMESTAMP DEFAULT NOW()
+CREATE TABLE public.weather_observations (
+	id bigserial NOT NULL,
+	observation_time timestamp NOT NULL,
+	latitude float8 NOT NULL,
+	longitude float8 NOT NULL,
+	temperature_c float8 NULL,
+	wind_speed_kmh float8 NULL,
+	precipitation_mm float8 NULL,
+	created_at timestamp DEFAULT now() NULL,
+	CONSTRAINT uq_weather_obs UNIQUE (observation_time, latitude, longitude),
+	CONSTRAINT weather_observations_pkey PRIMARY KEY (id)
 );
 
 -- =====================================================
@@ -119,16 +118,28 @@ CREATE TABLE movement_metrics
     distance_km DOUBLE PRECISION
 );
 
+-- =====================================================
+-- Weather enriched positions
+-- =====================================================
 
-CREATE TABLE public.weather_observations (
-	id bigserial NOT NULL,
-	observation_time timestamp NOT NULL,
-	latitude float8 NOT NULL,
-	longitude float8 NOT NULL,
-	temperature_c float8 NULL,
-	wind_speed_kmh float8 NULL,
-	precipitation_mm float8 NULL,
-	created_at timestamp DEFAULT now() NULL,
-	CONSTRAINT uq_weather_obs UNIQUE (observation_time, latitude, longitude),
-	CONSTRAINT weather_observations_pkey PRIMARY KEY (id)
-);
+
+CREATE OR REPLACE VIEW vw_weather_enriched_positions AS
+SELECT
+    np.animal_id,
+    np.event_time,
+    np.latitude,
+    np.longitude,
+    np.source,
+    wo.temperature_c,
+    wo.wind_speed_kmh,
+    wo.precipitation_mm,
+    wo.observation_time AS weather_time
+FROM normalized_positions np
+LEFT JOIN LATERAL (
+    SELECT w.*
+    FROM weather_observations w
+    WHERE w.observation_time = date_trunc('hour', np.event_time + interval '30 minutes')
+    ORDER BY (w.latitude  - np.latitude)^2
+           + (w.longitude - np.longitude)^2
+    LIMIT 1
+) wo ON true;
