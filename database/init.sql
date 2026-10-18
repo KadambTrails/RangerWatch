@@ -124,27 +124,52 @@ CREATE TABLE movement_metrics
 );
 
 -- =====================================================
--- Weather enriched positions
+-- single source of truth view
 -- =====================================================
 
-
-CREATE OR REPLACE VIEW vw_weather_enriched_positions AS
+CREATE OR REPLACE VIEW vw_animal_context AS
 SELECT
     np.animal_id,
     np.event_time,
     np.latitude,
     np.longitude,
     np.source,
+
+    mm.distance_km,
+    mm.time_gap_hours,
+
     wo.temperature_c,
     wo.wind_speed_kmh,
     wo.precipitation_mm,
-    wo.observation_time AS weather_time
+    wo.observation_time AS weather_time,
+
+    pa.name AS protected_area_name,
+
+    CASE
+        WHEN pa.name IS NULL THEN FALSE
+        ELSE TRUE
+    END AS inside_protected_area
+
 FROM normalized_positions np
+
+LEFT JOIN movement_metrics mm
+    ON np.animal_id = mm.animal_id
+   AND np.event_time = mm.event_time
+
 LEFT JOIN LATERAL (
     SELECT w.*
     FROM weather_observations w
-    WHERE w.observation_time = date_trunc('hour', np.event_time + interval '30 minutes')
-    ORDER BY (w.latitude  - np.latitude)^2
-           + (w.longitude - np.longitude)^2
+    WHERE w.observation_time =
+          date_trunc('hour', np.event_time + interval '30 minutes')
+    ORDER BY
+        (w.latitude - np.latitude)^2 +
+        (w.longitude - np.longitude)^2
     LIMIT 1
-) wo ON true;
+) wo ON TRUE
+
+LEFT JOIN LATERAL (
+    SELECT pa.name
+    FROM protected_areas pa
+    WHERE ST_Contains(pa.geom, np.geom)
+    LIMIT 1
+) pa ON TRUE;
