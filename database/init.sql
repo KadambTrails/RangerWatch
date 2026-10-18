@@ -60,6 +60,14 @@ CREATE INDEX idx_positions_geom
 ON normalized_positions
 USING GIST(geom);
 
+CREATE EXTENSION IF NOT EXISTS postgis;
+
+ALTER TABLE public.normalized_positions
+ADD COLUMN geom geometry(Point, 4326)
+GENERATED ALWAYS AS (ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)) STORED;
+
+CREATE INDEX idx_np_geom ON public.normalized_positions USING GIST (geom);
+
 -- =====================================================
 -- WEATHER ENRICHMENT
 -- =====================================================
@@ -82,18 +90,15 @@ CREATE TABLE public.weather_observations (
 -- PROTECTED AREAS
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS protected_areas (
-    id BIGSERIAL PRIMARY KEY,
-
-    area_name VARCHAR(255) NOT NULL,
-    source VARCHAR(100),
-
-    geom GEOMETRY(MULTIPOLYGON, 4326)
+CREATE TABLE public.protected_areas (
+	osm_id text DEFAULT nextval('protected_areas_osm_id_seq'::regclass) NOT NULL,
+	"name" text NULL,
+	designation text NULL,
+	geom public.geometry(multipolygon, 4326) NOT NULL,
+	CONSTRAINT protected_areas_pkey PRIMARY KEY (osm_id),
+	CONSTRAINT uq_protected_areas_osm_id UNIQUE (osm_id)
 );
-
-CREATE INDEX idx_protected_areas_geom
-ON protected_areas
-USING GIST (geom);
+CREATE INDEX protected_areas_geom_idx ON public.protected_areas USING gist (geom);
 
 -- =====================================================
 -- Unique Constraints
