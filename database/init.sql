@@ -103,3 +103,18 @@ USING GIST (geom);
 ALTER TABLE raw_events
 ADD CONSTRAINT uq_raw_events
 UNIQUE (source, source_record_id);
+
+CREATE TABLE movement_metrics
+(
+    animal_id VARCHAR(255),
+
+    event_time TIMESTAMP,
+
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
+
+    previous_latitude DOUBLE PRECISION,
+    previous_longitude DOUBLE PRECISION,
+
+    distance_km DOUBLE PRECISION
+);
