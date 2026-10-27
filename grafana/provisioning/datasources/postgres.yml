@@ -1,0 +1,18 @@
+apiVersion: 1
+
+datasources:
+  - name: rangerwatch
+    uid: rangerwatch-pg
+    type: postgres
+    access: proxy
+    url: rw-postgres:5432          # service/container name, not localhost
+    user: ${POSTGRES_USER}         # filled from the container environment (.env)
+    secureJsonData:
+      password: ${POSTGRES_PASSWORD}
+    jsonData:
+      database: ${POSTGRES_DB}
+      sslmode: disable
+      postgresVersion: 1600
+      timescaledb: false
+    isDefault: true
+    editable: true
