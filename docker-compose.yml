@@ -74,5 +74,23 @@ services:
     volumes:
       - ./spark_jobs:/opt/spark_jobs
 
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: rw-grafana
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - postgres
+
 volumes:
   postgres_data:
+  grafana_data:

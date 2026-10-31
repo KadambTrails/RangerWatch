@@ -1,0 +1,237 @@
+{
+  "id": null,
+  "uid": "rangerwatch-main",
+  "title": "RangerWatch",
+  "tags": [
+    "rangerwatch"
+  ],
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "",
+  "time": {
+    "from": "2008-07-01T00:00:00.000Z",
+    "to": "2008-12-31T23:59:59.000Z"
+  },
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "geomap",
+      "title": "Animal track (green = inside park, red = outside)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "rangerwatch-pg"
+      },
+      "gridPos": {
+        "h": 13,
+        "w": 14,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "rangerwatch-pg"
+          },
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT\n    np.event_time AS time,\n    np.animal_id,\n    np.latitude,\n    np.longitude,\n    CASE WHEN EXISTS (\n        SELECT 1 FROM public.protected_areas p WHERE ST_Intersects(p.geom, np.geom)\n    ) THEN 1 ELSE 0 END AS in_park\nFROM public.normalized_positions np\nWHERE $__timeFilter(np.event_time)\nORDER BY np.event_time"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "view": {
+          "id": "fit",
+          "lat": 0,
+          "lon": 0,
+          "zoom": 2,
+          "allLayers": true
+        },
+        "controls": {
+          "showZoom": true,
+          "mouseWheelZoom": true,
+          "showAttribution": true
+        },
+        "basemap": {
+          "type": "default",
+          "name": "Layer 0"
+        },
+        "layers": [
+          {
+            "type": "markers",
+            "name": "Positions",
+            "tooltip": true,
+            "location": {
+              "mode": "coords",
+              "latitude": "latitude",
+              "longitude": "longitude"
+            },
+            "config": {
+              "showLegend": false,
+              "style": {
+                "size": {
+                  "fixed": 5,
+                  "min": 2,
+                  "max": 15
+                },
+                "color": {
+                  "field": "in_park",
+                  "fixed": "dark-green"
+                },
+                "opacity": 0.8
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "type": "table",
+      "title": "Alerts (latest 200)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "rangerwatch-pg"
+      },
+      "gridPos": {
+        "h": 13,
+        "w": 10,
+        "x": 14,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "rangerwatch-pg"
+          },
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT\n   distinct event_time AS time,\n    animal_id,\n    alert_type,\n    severity,\n    alert_message\nFROM public.alerts\nORDER BY event_time DESC\nLIMIT 200"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Daily distance travelled (km)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "rangerwatch-pg"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 14,
+        "x": 0,
+        "y": 13
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "rangerwatch-pg"
+          },
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT\n    date_trunc('day', event_time) AS time,\n    animal_id AS metric,\n    SUM(distance_km) AS distance_km\nFROM public.movement_metrics\nWHERE $__timeFilter(event_time)\nGROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "lengthkm",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "table",
+      "title": "Data freshness per animal",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "rangerwatch-pg"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 10,
+        "x": 14,
+        "y": 13
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "rangerwatch-pg"
+          },
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT\n    animal_id,\n    MAX(event_time) AS last_position,\n    COUNT(*)        AS positions\nFROM public.normalized_positions\nGROUP BY animal_id\nORDER BY animal_id"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    }
+  ]
+}
