@@ -139,7 +139,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT\n    event_time AS time,\n    animal_id,\n    alert_type,\n    severity,\n    alert_message\nFROM public.alerts\nORDER BY event_time DESC\nLIMIT 200"
+          "rawSql": "SELECT\n   distinct event_time AS time,\n    animal_id,\n    alert_type,\n    severity,\n    alert_message\nFROM public.alerts\nORDER BY event_time DESC\nLIMIT 200"
         }
       ],
       "fieldConfig": {
