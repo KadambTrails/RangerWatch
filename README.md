@@ -1,223 +1,46 @@
-# RangerWatch
+## Architecture
 
-Wildlife Telemetry & Conservation Intelligence Platform
+```mermaid
+flowchart LR
+    subgraph SRC["External sources"]
+        MB["Movebank API"]
+        OSM["OpenStreetMap Overpass API"]
+        OM["Open-Meteo Archive API"]
+    end
 
-RangerWatch is a data engineering project inspired by real-world conservation monitoring systems. The project ingests telemetry, environmental, and geospatial data from multiple sources, processes it through Airflow and PySpark, and generates actionable alerts and analytics.
+    subgraph AF["Airflow DAG: rangerwatch_pipeline (daily)"]
+        J1["Movebank ingest"]
+        J2["Spark: normalize positions"]
+        J3["Protected areas load"]
+        J4["Weather sync"]
+        J5["Spark: movement metrics"]
+        J6["Spark: anomaly detection"]
+    end
 
-## Project Goals
+    subgraph DB["PostgreSQL + PostGIS"]
+        RAW[("raw_events")]
+        NP[("normalized_positions")]
+        PA[("protected_areas")]
+        WO[("weather_observations")]
+        MM[("movement_metrics")]
+        AL[("alerts")]
+    end
 
-This project is designed to provide hands-on experience with:
+    GF["Grafana dashboard"]
 
-- Python development
-- Data ingestion and integration
-- Apache Airflow orchestration
-- Apache Spark (PySpark)
-- Geospatial analytics
-- PostGIS
-- API integrations
-- Retry and backoff strategies
-- Incremental synchronization
-- Historical backfills
-- Data quality validation
-- Alert generation
+    MB --> J1 --> RAW
+    RAW --> J2 --> NP
+    OSM --> J3 --> PA
+    OM --> J4
+    NP --> J4 --> WO
+    NP --> J5 --> MM
+    MM --> J6
+    NP --> J6
+    PA --> J6
+    J6 --> AL
 
----
-
-## Data Sources
-
-### Movebank
-
-Primary source of wildlife telemetry data.
-
-### Open-Meteo
-
-Weather data used for enrichment and environmental context.
-
-### Protected Planet
-
-Protected area boundaries used for geofence analysis.
-
-### OpenStreetMap
-
-Villages, settlements, and road network data used for proximity analysis.
-
-### Vendor A / Vendor B / Vendor C
-
-Simulated external systems used to test:
-
-- Schema drift
-- Duplicate data
-- Rate limiting
-- Authentication changes
-- Out-of-order delivery
-
----
-
-## Technology Stack
-
-### Infrastructure
-
-- Docker Compose
-- PostgreSQL
-- PostGIS
-
-### Data Engineering
-
-- Python
-- Apache Spark (PySpark)
-- Pandas
-
-### Orchestration
-
-- Apache Airflow
-
-### Geospatial
-
-- PostGIS
-- GeoPandas
-
-### Visualization
-
-- Streamlit
-
----
-
-## Repository Structure
-
-text
-rangerwatch/
-
-├── airflow/
-│   ├── dags/
-│   ├── logs/
-│   └── plugins/
-│
-├── connectors/
-│   ├── movebank/
-│   ├── open_meteo/
-│   ├── protected_planet/
-│   ├── osm/
-│   ├── vendor_a/
-│   ├── vendor_b/
-│   └── vendor_c/
-│
-├── database/
-│   └── init.sql
-│
-├── spark/
-│   └── jobs/
-│
-├── dashboard/
-│
-├── tests/
-│
-├── docker-compose.yml
-├── requirements.txt
-└── README.md
-
-
----
-
-## Current Scope
-
-### Ingestion
-
-- Retrieve telemetry from Movebank
-- Retrieve weather data from Open-Meteo
-- Retrieve geospatial reference data
-- Maintain connector state and synchronization metadata
-
-### Processing
-
-- Schema normalization
-- Deduplication
-- Entity resolution
-- Weather enrichment
-- Geofence evaluation
-- Anomaly detection
-
-### Storage
-
-- Raw ingestion layer
-- Curated telemetry layer
-- Alert generation layer
-
-### Analytics
-
-- Animal movement tracking
-- Geofence breach detection
-- Settlement proximity alerts
-- Speed and distance calculations
-- Historical replay and backfills
-
----
-
-## Getting Started
-
-Start the platform:
-
-```bash
-docker compose up -d
+    NP & MM & AL & WO & PA --> GF
 ```
 
-Verify running services:
-
-```bash
-docker ps
-```
-
-Airflow UI:
-
-```text
-http://localhost:8080
-```
-
-Spark UI:
-
-```text
-http://localhost:8081
-```
-
----
-
-## Roadmap
-
-### Phase 1
-
-- Infrastructure setup
-- Postgres/PostGIS
-- Airflow
-- Spark
-
-### Phase 2
-
-- Movebank connector
-- Raw data ingestion
-
-### Phase 3
-
-- Airflow orchestration
-- Scheduled ingestion
-
-### Phase 4
-
-- Spark transformations
-- Data quality checks
-- Deduplication
-
-### Phase 5
-
-- Weather enrichment
-- Geofence analysis
-
-### Phase 6
-
-- Alerting
-- Dashboard
-- Historical backfills
-
----
-
-## License
-
-Educational and portfolio project.
+Spark jobs run on a standalone Spark cluster (master + worker) and are submitted from Airflow.
+The protected-area check runs in PostGIS (`ST_Intersects`); Spark detects the inside-to-outside transition.
