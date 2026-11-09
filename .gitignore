@@ -15,3 +15,8 @@ airflow/logs/
 # OS
 .DS_Store
 Thumbs.db
+
+*.env
+terraform.tfvars
+*.tfstate
+*.tfstate.backup
