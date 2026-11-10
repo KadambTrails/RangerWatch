@@ -1,11 +1,11 @@
-output "resource_group_name" {
-  value = azurerm_resource_group.rangerwatch.name
+output "postgres_endpoint" {
+  value = aws_db_instance.postgres.address
 }
 
-output "postgres_server_name" {
-  value = azurerm_postgresql_flexible_server.db.name
+output "ecr_airflow_repo" {
+  value = aws_ecr_repository.airflow.repository_url
 }
 
-output "keyvault_name" {
-  value = azurerm_key_vault.kv.name
+output "ecr_spark_repo" {
+  value = aws_ecr_repository.spark.repository_url
 }
