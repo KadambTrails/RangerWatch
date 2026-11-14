@@ -99,3 +99,9 @@ Tracking data: Movebank (study 2911040; check the study's terms before reuse). W
 - Weather uses one average position per animal per day, which is coarse for animals that travel far.
 - Protected areas come from OpenStreetMap, not official sources, and marine reserves are not included.
 - The `alerts` table is rebuilt on every run, so there is no alert history.
+
+## Future work
+
+- Move PostGIS to RDS and raw data to S3 (Parquet)
+- Run Spark jobs on EMR Serverless
+- Add CD (build images, push to ECR, redeploy on merge to `main`)
